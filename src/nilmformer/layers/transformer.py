@@ -27,7 +27,7 @@ class DiagonalMaskFromSeqlen:
 
     @property
     def mask(self) -> torch.Tensor:
-        return self._mask
+        return self._mask # [B, 1, L, L]
 
 
 class DiagonnalyMaskedSelfAttention(nn.Module):
@@ -66,11 +66,11 @@ class DiagonnalyMaskedSelfAttention(nn.Module):
 
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
 
-        xq = xq.view(batch, seqlen, self.n_heads, self.head_dim)
-        xk = xk.view(batch, seqlen, self.n_heads, self.head_dim)
-        xv = xv.view(batch, seqlen, self.n_heads, self.head_dim)
+        xq = xq.view(batch, seqlen, self.n_heads, self.head_dim) # [B, L, N_H, H]
+        xk = xk.view(batch, seqlen, self.n_heads, self.head_dim) # [B, L, N_H, H]
+        xv = xv.view(batch, seqlen, self.n_heads, self.head_dim) # [B, L, N_H, H]
 
-        diag_mask = DiagonalMaskFromSeqlen(batch, seqlen, device=xq.device)
+        diag_mask = DiagonalMaskFromSeqlen(batch, seqlen, device=xq.device) # [B, 1, L, L]
 
         if self.use_efficient_attention:
             output = xops.memory_efficient_attention(
@@ -85,7 +85,7 @@ class DiagonnalyMaskedSelfAttention(nn.Module):
             scores = torch.einsum("blhe,bshe->bhls", xq, xk)
             attn = self.attn_dropout(
                 torch.softmax(
-                    scale * scores.masked_fill_(diag_mask.mask, -np.inf), dim=-1
+                    scale * scores.masked_fill_(diag_mask.mask, torch.finfo(scores.dtype).min), dim=-1
                 )
             )
             output = torch.einsum("bhls,bshd->blhd", attn, xv)
