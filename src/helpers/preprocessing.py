@@ -730,7 +730,14 @@ class UKDALE_DataBuilder(object):
                 else:
                     continue
             else:
+                # zero padding for missing appliance
+                # this is needed to clip the data when the appliance is not
+                # in the house
                 house_data[appliance] = 0
+                house_data = house_data.clip(
+                    lower=0, upper=self.cutoff
+                )  # Apply general cutoff
+                house_data = house_data.sort_index()
                 house_data[appliance + "_status"] = 0
 
         return house_data
