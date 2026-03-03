@@ -637,6 +637,7 @@ class UKDALE_DataBuilder(object):
             house_data.resample("10s").mean().ffill(limit=6)
         )  # Resample to minimum of 10s and ffill for 1min30
         house_data[house_data < 5] = 0  # Remove small value
+        house_data = house_data.clip(lower=0, upper=self.cutoff)
 
         if self.flag_week:
             tmp_min = house_data[
